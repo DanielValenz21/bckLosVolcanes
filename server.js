@@ -1,27 +1,47 @@
+// server.js
+require('dotenv').config();
 const express = require('express');
-const { getConnection } = require('./config/db.js');
+const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+// Importar rutas
+const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(express.json());
+app.use(cors());
 
-app.get('/api/test-db', async (req, res) => {
-  try {
-    const pool = await getConnection();
-    const result = await pool.request().query('Select * from MovimientosCamiones');
-    res.json({
-      success: true,
-      data: result.recordset
-    });
-  } catch (error) {
-    console.error('Error probando la conexión:', error);
-    res.status(500).json({
-      success: false,
-      message: 'No se pudo conectar a la base de datos',
-      error
-    });
-  }
-});
+// === Configuración de Swagger ===
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'LosVolcanes API',
+      version: '1.0.0',
+      description: 'API de Inventario/Ventas'
+    },
+    servers: [
+      {
+        url: 'http://localhost:3001',
+        description: 'Servidor Local'
+      }
+    ]
+  },
+  // Aquí define dónde buscar las anotaciones
+  apis: ['./routes/*.js', './controllers/*.js']
+};
 
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// === Rutas de la aplicación ===
+app.use('/api/auth', authRoutes);   // POST /api/auth/login
+app.use('/api/users', userRoutes);  // POST /api/users
+
+// Levantar servidor
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto: ${PORT}`);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
