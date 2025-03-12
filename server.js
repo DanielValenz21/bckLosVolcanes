@@ -11,7 +11,7 @@ const userRoutes = require('./routes/user.routes');
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors()); // Habilitar CORS para permitir peticiones desde el frontend (puerto 3000)
 
 // === Configuración de Swagger ===
 const swaggerOptions = {
@@ -41,7 +41,7 @@ app.use('/api/auth', authRoutes);   // POST /api/auth/login
 app.use('/api/users', userRoutes);  // POST /api/users
 
 // Levantar servidor
-const PORT = process.env.PORT || 3001;
+const PORT = 3001; // Asegúrate de que sea 3001
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log('Servidor corriendo en puerto ' + PORT);
 });
