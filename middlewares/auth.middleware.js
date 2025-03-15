@@ -11,7 +11,7 @@ const verifyToken = (req, res, next) => {
   // 1. Obtener token de la cabecera Authorization
   const authHeader = req.headers['authorization'];
   if (!authHeader) {
-    return res.status(401).json({ message: 'No se proporcionó Authorization header' });
+    return res.status(401).json({ message: 'No se proporcionó token de autorización' });
   }
 
   // El header viene como "Bearer xxxxxxx"
@@ -20,15 +20,15 @@ const verifyToken = (req, res, next) => {
     return res.status(401).json({ message: 'Token ausente o mal formateado' });
   }
 
-  try {
-    // 2. Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // 3. Guardar datos del usuario en req para usos posteriores
+  // Verificar el token de forma asíncrona
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: 'Token inválido o expirado' });
+    }
+    // Guardamos la información del token en req.user para usarla en los endpoints
     req.user = decoded;
-    return next();
-  } catch (error) {
-    return res.status(401).json({ message: 'Token inválido o expirado' });
-  }
+    next();
+  });
 };
 
 module.exports = { verifyToken };

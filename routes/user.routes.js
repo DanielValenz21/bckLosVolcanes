@@ -1,24 +1,18 @@
 // routes/user.routes.js
 const { Router } = require('express');
 const { createUser } = require('../controllers/user.controller');
-// Si deseas proteger la creación, puedes usar un middleware verifyToken
-// const { verifyToken } = require('../middlewares/auth.middleware');
+const { verifyToken } = require('../middlewares/auth.middleware');
 
 const router = Router();
 
 /**
  * @swagger
- * tags:
- *   name: Users
- *   description: Endpoints para gestionar usuarios
- */
-
-/**
- * @swagger
  * /api/users:
  *   post:
- *     summary: Crea un nuevo usuario
+ *     summary: Crea un nuevo usuario (solo para administradores autenticados)
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -28,21 +22,21 @@ const router = Router();
  *             properties:
  *               nombreUsuario:
  *                 type: string
- *                 example: admin
+ *                 example: adminNuevo
  *               password:
  *                 type: string
  *                 example: admin123
  *               idRol:
- *                 type: integer
+ *                 type: number
  *                 example: 1
  *     responses:
  *       200:
  *         description: Usuario creado exitosamente
- *       400:
- *         description: Faltan campos requeridos
+ *       401:
+ *         description: No autorizado
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/', createUser);
+router.post('/', verifyToken, createUser);
 
 module.exports = router;

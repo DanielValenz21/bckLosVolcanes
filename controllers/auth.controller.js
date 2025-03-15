@@ -17,7 +17,6 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Faltan campos requeridos' });
     }
 
-    // 1) Buscar en BD
     const pool = await getConnection();
     const result = await pool.request()
       .input('nombreUsuario', sql.VarChar, nombreUsuario)
@@ -32,10 +31,8 @@ const login = async (req, res) => {
     }
 
     const user = result.recordset[0];
-
-    // 2) Re-hashear la password con la sal recuperada
-    const storedSalt = user.SalContrasena;     // Buffer (varbinary)
-    const storedHash = user.HashContrasena;    // Buffer (varbinary)
+    const storedSalt = user.SalContrasena;     // Buffer
+    const storedHash = user.HashContrasena;      // Buffer
     const hashToCheck = crypto.createHash('sha256')
                               .update(storedSalt)
                               .update(password)
@@ -45,7 +42,7 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Usuario o contraseña inválidos' });
     }
 
-    // 3) Generar JWT
+    // Generar JWT con expiración corta, por ejemplo 1 hora
     const token = jwt.sign(
       { userId: user.IdUsuario, role: user.IdRol },
       process.env.JWT_SECRET,
