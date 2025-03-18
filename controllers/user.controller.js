@@ -3,38 +3,44 @@ const { getConnection, sql } = require('../config/db');
 const crypto = require('crypto');
 
 /**
- * CREA USUARIO:
+ * createUser:
  *  - nombreUsuario
  *  - password
- *  - idRol (opcional, default 2 => Vendedor, por ejemplo)
+ *  - idRol (opcional, default 2 => "Vendedor")
  */
 const createUser = async (req, res) => {
   try {
     const { nombreUsuario, password, idRol = 2 } = req.body;
-
     if (!nombreUsuario || !password) {
       return res.status(400).json({ message: 'Faltan campos requeridos' });
     }
 
-    // 1) Generar sal aleatoria
-    const salt = crypto.randomBytes(16); // Buffer
-
-    // 2) Hashear con SHA-256
+    // Generar sal aleatoria
+    const salt = crypto.randomBytes(16);
+    // Hashear con SHA-256
     const hash = crypto.createHash('sha256')
                        .update(salt)
                        .update(password)
-                       .digest(); // Buffer
+                       .digest();
 
-    // 3) Insertar en la BD
     const pool = await getConnection();
+    // Verificar si ya existe el mismo nombre de usuario
+    let result = await pool.request()
+      .input('NombreUsuario', sql.VarChar, nombreUsuario)
+      .query('SELECT IdUsuario FROM Usuarios WHERE NombreUsuario = @NombreUsuario');
+    if (result.recordset.length > 0) {
+      return res.status(400).json({ message: 'El nombre de usuario ya existe' });
+    }
+
+    // Insertar en la tabla Usuarios
     await pool.request()
-      .input('nombreUsuario', sql.VarChar, nombreUsuario)
-      .input('hash', sql.VarBinary, hash)
-      .input('salt', sql.VarBinary, salt)
-      .input('idRol', sql.Int, idRol)
+      .input('NombreUsuario', sql.VarChar, nombreUsuario)
+      .input('HashContrasena', sql.VarBinary, hash)
+      .input('SalContrasena', sql.VarBinary, salt)
+      .input('IdRol', sql.Int, idRol)
       .query(`
         INSERT INTO Usuarios (NombreUsuario, HashContrasena, SalContrasena, IdRol)
-        VALUES (@nombreUsuario, @hash, @salt, @idRol)
+        VALUES (@NombreUsuario, @HashContrasena, @SalContrasena, @IdRol)
       `);
 
     return res.json({ message: 'Usuario creado exitosamente' });

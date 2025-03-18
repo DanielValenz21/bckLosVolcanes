@@ -1,11 +1,12 @@
 const sql = require('mssql');
+require('dotenv').config();
 
 const dbSettings = {
-  user: 'sa',
-  password: 'Daniel12',
-  server: 'DESKTOP-12PJMKF',  // o 'localhost'
-  port: 1434,                // el puerto que fijaste
-  database: 'SistemaInventarioVentasDB',
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER,
+  port: parseInt(process.env.DB_PORT || '1433'),
+  database: process.env.DB_DATABASE,
   options: {
     encrypt: true,
     trustServerCertificate: true

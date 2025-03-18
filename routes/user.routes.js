@@ -1,18 +1,23 @@
 // routes/user.routes.js
 const { Router } = require('express');
 const { createUser } = require('../controllers/user.controller');
-const { verifyToken } = require('../middlewares/auth.middleware');
+// const { verifyToken } = require('../middlewares/auth.middleware'); // Ya no se usa
 
 const router = Router();
 
 /**
  * @swagger
+ * tags:
+ *   name: Users
+ *   description: Endpoints para manejo de usuarios
+ */
+
+/**
+ * @swagger
  * /api/users:
  *   post:
- *     summary: Crea un nuevo usuario (solo para administradores autenticados)
+ *     summary: Crea un nuevo usuario (público, sin token)
  *     tags: [Users]
- *     security:
- *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -22,21 +27,21 @@ const router = Router();
  *             properties:
  *               nombreUsuario:
  *                 type: string
- *                 example: adminNuevo
+ *                 example: "nuevoUsuario"
  *               password:
  *                 type: string
- *                 example: admin123
+ *                 example: "123456"
  *               idRol:
  *                 type: number
- *                 example: 1
+ *                 example: 2
  *     responses:
  *       200:
  *         description: Usuario creado exitosamente
- *       401:
- *         description: No autorizado
+ *       400:
+ *         description: Error en los datos o nombre de usuario duplicado
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/', verifyToken, createUser);
+router.post('/', createUser);
 
 module.exports = router;

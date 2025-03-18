@@ -26,10 +26,8 @@ const router = Router();
  *             properties:
  *               nombreUsuario:
  *                 type: string
- *                 example: admin
  *               password:
  *                 type: string
- *                 example: admin123
  *     responses:
  *       200:
  *         description: Retorna token JWT y datos de usuario

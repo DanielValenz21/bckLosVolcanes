@@ -2,14 +2,8 @@
 const { getConnection, sql } = require('../config/db');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-require('dotenv').config(); // Lee JWT_SECRET desde .env
+require('dotenv').config();
 
-/**
- * LOGIN:
- *  - nombreUsuario
- *  - password
- * Retorna token JWT si coincide HashContrasena + SalContrasena
- */
 const login = async (req, res) => {
   try {
     const { nombreUsuario, password } = req.body;
@@ -31,8 +25,10 @@ const login = async (req, res) => {
     }
 
     const user = result.recordset[0];
-    const storedSalt = user.SalContrasena;     // Buffer
-    const storedHash = user.HashContrasena;      // Buffer
+    const storedSalt = user.SalContrasena;    // Buffer
+    const storedHash = user.HashContrasena;   // Buffer
+
+    // Generar hash localmente para comparar
     const hashToCheck = crypto.createHash('sha256')
                               .update(storedSalt)
                               .update(password)
@@ -42,7 +38,7 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Usuario o contraseña inválidos' });
     }
 
-    // Generar JWT con expiración corta, por ejemplo 1 hora
+    // Generar el JWT
     const token = jwt.sign(
       { userId: user.IdUsuario, role: user.IdRol },
       process.env.JWT_SECRET,
@@ -63,6 +59,4 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = {
-  login
-};
+module.exports = { login };
