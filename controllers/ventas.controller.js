@@ -2,21 +2,17 @@
 const { getConnection, sql } = require('../config/db');
 
 /**
- * CREA UNA NUEVA VENTA (cabecera y detalles):
- *  - Body JSON:
- *    {
- *      "IdCliente": 1,
- *      "CreadoPor": 2,
- *      "Descuento": 0,
- *      "Detalles": [
- *        {
- *          "IdProducto": 10,
- *          "Cantidad": 2,
- *          "PorcentajeDescuento": 5
- *        },
- *        ...
- *      ]
- *    }
+ * CREA UNA NUEVA VENTA (cabecera y detalles)
+ * Body JSON:
+ * {
+ *   "IdCliente": 1,
+ *   "CreadoPor": 2,
+ *   "Descuento": 0,
+ *   "Detalles": [
+ *     { "IdProducto": 10, "Cantidad": 2, "PorcentajeDescuento": 5 },
+ *     { "IdProducto": 11, "Cantidad": 1 }
+ *   ]
+ * }
  */
 const crearVenta = async (req, res) => {
   let transaction;
@@ -30,7 +26,7 @@ const crearVenta = async (req, res) => {
     transaction = new sql.Transaction(pool);
     await transaction.begin();
 
-    // 1. Obtener el IdTipoCliente del cliente
+    // Obtener el IdTipoCliente del cliente
     let result = await transaction.request()
       .input('IdCliente', sql.Int, IdCliente)
       .query('SELECT IdTipoCliente FROM Clientes WHERE IdCliente = @IdCliente');
@@ -43,7 +39,7 @@ const crearVenta = async (req, res) => {
     let subtotalVenta = 0;
     const detallesParaInsertar = [];
 
-    // 2. Recorrer cada detalle y calcular precios
+    // Recorrer cada detalle y calcular precios
     for (const detalle of Detalles) {
       const { IdProducto, Cantidad, PorcentajeDescuento = 0 } = detalle;
       if (!IdProducto || !Cantidad || Cantidad <= 0) {
@@ -51,7 +47,7 @@ const crearVenta = async (req, res) => {
         return res.status(400).json({ message: 'Detalle con campos inválidos' });
       }
 
-      // Buscar precio especial
+      // Buscar precio especial para el producto y tipo de cliente
       result = await transaction.request()
         .input('IdProducto', sql.Int, IdProducto)
         .input('IdTipoCliente', sql.Int, IdTipoCliente)
@@ -61,7 +57,7 @@ const crearVenta = async (req, res) => {
       if (result.recordset.length > 0 && result.recordset[0].PrecioEspecial != null) {
         PrecioUnitario = result.recordset[0].PrecioEspecial;
       } else {
-        // Usar precio base
+        // Usar PrecioBase si no hay precio especial
         result = await transaction.request()
           .input('IdProducto', sql.Int, IdProducto)
           .query('SELECT PrecioBase FROM Productos WHERE IdProducto = @IdProducto');
@@ -71,24 +67,17 @@ const crearVenta = async (req, res) => {
         }
         PrecioUnitario = result.recordset[0].PrecioBase;
       }
-
-      // Calcular subtotal de la línea aplicando descuento de línea
+      
       const precioEfectivo = PrecioUnitario * (1 - (PorcentajeDescuento / 100));
       const subtotalLinea = precioEfectivo * Cantidad;
       subtotalVenta += subtotalLinea;
 
-      detallesParaInsertar.push({
-        IdProducto,
-        Cantidad,
-        PrecioUnitario,
-        PorcentajeDescuento
-      });
+      detallesParaInsertar.push({ IdProducto, Cantidad, PrecioUnitario, PorcentajeDescuento });
     }
 
-    // 3. Calcular total (subtotal - descuento global)
     const Total = subtotalVenta - Descuento;
 
-    // 4. Insertar cabecera en Ventas
+    // Insertar cabecera en Ventas
     result = await transaction.request()
       .input('IdCliente', sql.Int, IdCliente)
       .input('CreadoPor', sql.Int, CreadoPor)
@@ -104,7 +93,7 @@ const crearVenta = async (req, res) => {
       `);
     const IdVenta = result.recordset[0].IdVenta;
 
-    // 5. Insertar detalles
+    // Insertar cada detalle en DetallesVenta
     for (const detalle of detallesParaInsertar) {
       await transaction.request()
         .input('IdVenta', sql.Int, IdVenta)
@@ -130,13 +119,27 @@ const crearVenta = async (req, res) => {
 };
 
 /**
- * LISTAR TODAS LAS VENTAS
+ * LISTAR TODAS LAS VENTAS (incluye el NombreCliente)
  */
 const getVentas = async (req, res) => {
   try {
     const pool = await getConnection();
-    const result = await pool.request()
-      .query('SELECT * FROM Ventas ORDER BY FechaVenta DESC');
+    // Hacemos JOIN con Clientes para obtener NombreCliente
+    const result = await pool.request().query(`
+      SELECT 
+        v.IdVenta,
+        v.IdCliente,
+        c.NombreCliente,
+        v.FechaVenta,
+        v.Subtotal,
+        v.Descuento,
+        v.Total,
+        v.Estado,
+        v.CreadoPor
+      FROM Ventas v
+      JOIN Clientes c ON v.IdCliente = c.IdCliente
+      ORDER BY v.FechaVenta DESC
+    `);
     return res.json(result.recordset);
   } catch (error) {
     console.error('Error al obtener ventas:', error);
@@ -160,7 +163,7 @@ const getVentaById = async (req, res) => {
     }
     const venta = result.recordset[0];
 
-    // Obtener detalles
+    // Obtener detalles de la venta
     result = await pool.request()
       .input('IdVenta', sql.Int, id)
       .query(`
@@ -179,8 +182,7 @@ const getVentaById = async (req, res) => {
 };
 
 /**
- * ACTUALIZAR UNA VENTA (si está en estado "Pendiente")
- *  - Reemplaza todos los detalles y recalcula Subtotal, Total, etc.
+ * ACTUALIZAR UNA VENTA (solo si está en estado "Pendiente")
  */
 const updateVenta = async (req, res) => {
   let transaction;
@@ -190,10 +192,7 @@ const updateVenta = async (req, res) => {
     if (!Detalles || !Array.isArray(Detalles) || Detalles.length === 0) {
       return res.status(400).json({ message: 'Detalles deben ser proporcionados' });
     }
-
     const pool = await getConnection();
-
-    // Verificar que la venta existe y que esté en estado "Pendiente"
     let result = await pool.request()
       .input('IdVenta', sql.Int, id)
       .query('SELECT * FROM Ventas WHERE IdVenta = @IdVenta');
@@ -204,11 +203,8 @@ const updateVenta = async (req, res) => {
     if (venta.Estado !== 'Pendiente') {
       return res.status(400).json({ message: 'Solo se puede actualizar ventas en estado Pendiente' });
     }
-
     transaction = new sql.Transaction(pool);
     await transaction.begin();
-
-    // Obtener IdTipoCliente
     result = await transaction.request()
       .input('IdCliente', sql.Int, venta.IdCliente)
       .query('SELECT IdTipoCliente FROM Clientes WHERE IdCliente = @IdCliente');
@@ -217,24 +213,18 @@ const updateVenta = async (req, res) => {
       return res.status(400).json({ message: 'Cliente no encontrado' });
     }
     const IdTipoCliente = result.recordset[0].IdTipoCliente;
-
     let subtotalVenta = 0;
     const detallesParaInsertar = [];
-
-    // Calcular nuevos detalles
     for (const detalle of Detalles) {
       const { IdProducto, Cantidad, PorcentajeDescuento = 0 } = detalle;
       if (!IdProducto || !Cantidad || Cantidad <= 0) {
         await transaction.rollback();
         return res.status(400).json({ message: 'Detalle con campos inválidos' });
       }
-
-      // Buscar precio especial
       result = await transaction.request()
         .input('IdProducto', sql.Int, IdProducto)
         .input('IdTipoCliente', sql.Int, IdTipoCliente)
         .query('SELECT PrecioEspecial FROM PreciosProducto WHERE IdProducto = @IdProducto AND IdTipoCliente = @IdTipoCliente');
-      
       let PrecioUnitario;
       if (result.recordset.length > 0 && result.recordset[0].PrecioEspecial != null) {
         PrecioUnitario = result.recordset[0].PrecioEspecial;
@@ -248,22 +238,12 @@ const updateVenta = async (req, res) => {
         }
         PrecioUnitario = result.recordset[0].PrecioBase;
       }
-
       const precioEfectivo = PrecioUnitario * (1 - (PorcentajeDescuento / 100));
       const subtotalLinea = precioEfectivo * Cantidad;
       subtotalVenta += subtotalLinea;
-
-      detallesParaInsertar.push({
-        IdProducto,
-        Cantidad,
-        PrecioUnitario,
-        PorcentajeDescuento
-      });
+      detallesParaInsertar.push({ IdProducto, Cantidad, PrecioUnitario, PorcentajeDescuento });
     }
-
     const Total = subtotalVenta - Descuento;
-
-    // Actualizar cabecera
     await transaction.request()
       .input('IdVenta', sql.Int, id)
       .input('Subtotal', sql.Decimal(18, 2), subtotalVenta)
@@ -276,13 +256,9 @@ const updateVenta = async (req, res) => {
             Total = @Total
         WHERE IdVenta = @IdVenta
       `);
-
-    // Eliminar los detalles actuales
     await transaction.request()
       .input('IdVenta', sql.Int, id)
       .query('DELETE FROM DetallesVenta WHERE IdVenta = @IdVenta');
-
-    // Insertar los nuevos detalles
     for (const detalle of detallesParaInsertar) {
       await transaction.request()
         .input('IdVenta', sql.Int, id)
@@ -295,7 +271,6 @@ const updateVenta = async (req, res) => {
           VALUES (@IdVenta, @IdProducto, @Cantidad, @PrecioUnitario, @PorcentajeDescuento)
         `);
     }
-
     await transaction.commit();
     return res.json({ message: 'Venta actualizada exitosamente' });
   } catch (error) {

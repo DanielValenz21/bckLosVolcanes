@@ -22,13 +22,47 @@ const router = Router();
  * @swagger
  * /api/ventas:
  *   get:
- *     summary: Listar todas las ventas
+ *     summary: Listar todas las ventas (incluye NombreCliente)
  *     tags: [Ventas]
  *     security:
  *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: Devuelve un array de ventas
+ *         description: Devuelve un array de ventas con nombre del cliente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   IdVenta:
+ *                     type: number
+ *                     example: 1
+ *                   IdCliente:
+ *                     type: number
+ *                     example: 2
+ *                   NombreCliente:
+ *                     type: string
+ *                     example: "Constructora XYZ"
+ *                   FechaVenta:
+ *                     type: string
+ *                     example: "2025-03-27T12:34:56.000Z"
+ *                   Subtotal:
+ *                     type: number
+ *                     example: 500.0
+ *                   Descuento:
+ *                     type: number
+ *                     example: 0
+ *                   Total:
+ *                     type: number
+ *                     example: 500.0
+ *                   Estado:
+ *                     type: string
+ *                     example: "Pendiente"
+ *                   CreadoPor:
+ *                     type: number
+ *                     example: 1
  *       500:
  *         description: Error interno del servidor
  */
