@@ -11,7 +11,8 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const ventasRoutes = require('./routes/ventas.routes'); // <-- Aquí
-
+const clientesRoutes = require('./routes/clientes.routes');
+const productosRoutes = require('./routes/productos.routes');
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -50,7 +51,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/ventas', ventasRoutes); // <-- Montar aquí
-
+app.use('/api/clientes', clientesRoutes);
+app.use('/api/productos', productosRoutes);
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log('Servidor corriendo en puerto ' + PORT);
