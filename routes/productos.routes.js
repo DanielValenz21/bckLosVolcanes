@@ -16,13 +16,13 @@ const router = Router();
  * @swagger
  * /api/productos:
  *   get:
- *     summary: Obtiene la lista de productos
+ *     summary: Obtiene la lista de productos con su stock
  *     tags: [Productos]
  *     security:
  *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: Devuelve un array de productos
+ *         description: Devuelve un array de productos con stock
  *         content:
  *           application/json:
  *             schema:
@@ -39,6 +39,9 @@ const router = Router();
  *                   PrecioBase:
  *                     type: number
  *                     example: 85.5
+ *                   Stock:
+ *                     type: number
+ *                     example: 100
  *       401:
  *         description: No se proporcionó token o es inválido
  *       500:
