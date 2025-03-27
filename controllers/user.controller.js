@@ -1,5 +1,5 @@
 // controllers/user.controller.js
-const { getConnection, sql } = require('../config/db');
+const { pool } = require('../config/db');
 const crypto = require('crypto');
 
 /**
@@ -23,25 +23,21 @@ const createUser = async (req, res) => {
                        .update(password)
                        .digest();
 
-    const pool = await getConnection();
     // Verificar si ya existe el mismo nombre de usuario
-    let result = await pool.request()
-      .input('NombreUsuario', sql.VarChar, nombreUsuario)
-      .query('SELECT IdUsuario FROM Usuarios WHERE NombreUsuario = @NombreUsuario');
-    if (result.recordset.length > 0) {
+    const [rows] = await pool.execute(
+      'SELECT IdUsuario FROM Usuarios WHERE NombreUsuario = ?',
+      [nombreUsuario]
+    );
+    if (rows.length > 0) {
       return res.status(400).json({ message: 'El nombre de usuario ya existe' });
     }
 
     // Insertar en la tabla Usuarios
-    await pool.request()
-      .input('NombreUsuario', sql.VarChar, nombreUsuario)
-      .input('HashContrasena', sql.VarBinary, hash)
-      .input('SalContrasena', sql.VarBinary, salt)
-      .input('IdRol', sql.Int, idRol)
-      .query(`
-        INSERT INTO Usuarios (NombreUsuario, HashContrasena, SalContrasena, IdRol)
-        VALUES (@NombreUsuario, @HashContrasena, @SalContrasena, @IdRol)
-      `);
+    await pool.execute(
+      `INSERT INTO Usuarios (NombreUsuario, HashContrasena, SalContrasena, IdRol)
+       VALUES (?, ?, ?, ?)`,
+      [nombreUsuario, hash, salt, idRol]
+    );
 
     return res.json({ message: 'Usuario creado exitosamente' });
   } catch (error) {

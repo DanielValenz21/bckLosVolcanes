@@ -1,7 +1,7 @@
 // routes/user.routes.js
 const { Router } = require('express');
 const { createUser } = require('../controllers/user.controller');
-// const { verifyToken } = require('../middlewares/auth.middleware'); // Ya no se usa
+// const { verifyToken } = require('../middlewares/auth.middleware'); // si quisieras protegerlo
 
 const router = Router();
 

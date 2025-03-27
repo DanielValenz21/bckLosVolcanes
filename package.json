@@ -1,7 +1,7 @@
 {
   "name": "inventario-ventas-api",
   "version": "1.0.0",
-  "description": "API de Inventario/Ventas con JWT y Swagger",
+  "description": "API de Inventario/Ventas con JWT y Swagger (MySQL)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -16,7 +16,7 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
-    "mssql": "^11.0.0",
+    "mysql2": "^3.14.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },

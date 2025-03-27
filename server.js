@@ -10,9 +10,10 @@ const swaggerJsdoc = require('swagger-jsdoc');
 // Rutas
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
-const ventasRoutes = require('./routes/ventas.routes'); // <-- Aquí
+const ventasRoutes = require('./routes/ventas.routes');
 const clientesRoutes = require('./routes/clientes.routes');
 const productosRoutes = require('./routes/productos.routes');
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -24,11 +25,11 @@ const swaggerOptions = {
     info: {
       title: 'LosVolcanes API',
       version: '1.0.0',
-      description: 'API de Inventario/Ventas'
+      description: 'API de Inventario/Ventas (MySQL)'
     },
     servers: [
       {
-        url: 'http://localhost:3001',
+        url: `http://localhost:${process.env.PORT || 3001}`,
         description: 'Servidor Local'
       }
     ],
@@ -50,10 +51,11 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/ventas', ventasRoutes); // <-- Montar aquí
+app.use('/api/ventas', ventasRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/productos', productosRoutes);
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log('Servidor corriendo en puerto ' + PORT);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });

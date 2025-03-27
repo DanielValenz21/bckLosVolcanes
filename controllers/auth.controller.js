@@ -1,5 +1,5 @@
 // controllers/auth.controller.js
-const { getConnection, sql } = require('../config/db');
+const { pool } = require('../config/db');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -11,28 +11,26 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Faltan campos requeridos' });
     }
 
-    const pool = await getConnection();
-    const result = await pool.request()
-      .input('nombreUsuario', sql.VarChar, nombreUsuario)
-      .query(`
-        SELECT IdUsuario, NombreUsuario, HashContrasena, SalContrasena, IdRol
-        FROM Usuarios
-        WHERE NombreUsuario = @nombreUsuario
-      `);
-
-    if (result.recordset.length === 0) {
+    // Buscar usuario por nombreUsuario
+    const [rows] = await pool.execute(
+      `SELECT IdUsuario, NombreUsuario, HashContrasena, SalContrasena, IdRol
+       FROM Usuarios
+       WHERE NombreUsuario = ?`,
+      [nombreUsuario]
+    );
+    if (rows.length === 0) {
       return res.status(401).json({ message: 'Usuario o contraseña inválidos' });
     }
 
-    const user = result.recordset[0];
-    const storedSalt = user.SalContrasena;    // Buffer
-    const storedHash = user.HashContrasena;   // Buffer
+    const user = rows[0];
+    const storedSalt = user.SalContrasena;  // Buffer
+    const storedHash = user.HashContrasena; // Buffer
 
-    // Generar hash localmente para comparar
+    // Generar hash local para comparar
     const hashToCheck = crypto.createHash('sha256')
                               .update(storedSalt)
                               .update(password)
-                              .digest(); // Buffer
+                              .digest();
 
     if (!hashToCheck.equals(storedHash)) {
       return res.status(401).json({ message: 'Usuario o contraseña inválidos' });

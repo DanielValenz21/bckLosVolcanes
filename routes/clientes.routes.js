@@ -23,25 +23,6 @@ const router = Router();
  *     responses:
  *       200:
  *         description: Devuelve un array de clientes
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   IdCliente:
- *                     type: number
- *                     example: 1
- *                   NombreCliente:
- *                     type: string
- *                     example: "Constructora Edificar"
- *                   IdTipoCliente:
- *                     type: number
- *                     example: 2
- *                   TipoCliente:
- *                     type: string
- *                     example: "Ferreteria"
  *       401:
  *         description: No se proporcionó token o es inválido
  *       500:
